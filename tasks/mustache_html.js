@@ -26,7 +26,8 @@ module.exports = function(grunt) {
     var fs = require('fs'),
         hogan = require('hogan.js'),
         jstSuffix = '.' + options.type,
-        matcher = new RegExp('\\' + jstSuffix + '$');
+        matcher = new RegExp('\\' + jstSuffix + '$'),
+    partialsMatcher = new RegExp('partials');
 
     // jsts path
     var layoutPath = options.src + '/layout' + jstSuffix,
@@ -34,21 +35,32 @@ module.exports = function(grunt) {
         partialPath = options.src + '/partials';
 
     var pageData = {},
-        partials = render(partialPath),
-        pages = render(pagePath, partials);
-
+    
+        pages = render(pagePath, {});
+    grunt.log.writeln(JSON.stringify(pages));
     var layoutSrc = grunt.file.read(layoutPath),
         layout = hogan.compile(layoutSrc, { sectionTags: [{o:'_i', c:'i'}] });
 
-    each(pages, function (page, name) {
-        partials.content = page;
-        page = layout.render(pageData[name] || {}, partials);
+    each(pages, function (pageAndData, name) {
+    	var rendered=pageAndData.rendered;
+    	var data=pageAndData.data;
+    	data.content=rendered;
+    	var partialsPageAndData = render(partialPath,data);
+    	var partials={
+    			content: rendered
+    	};
+    	each(partialsPageAndData,function(partialPageAndData,partialName){
+    		partials[partialName]=partialPageAndData.rendered;
+    	});
+       var page = layout.render(data,partials);
+        grunt.log.writeln("Writing page "+page);
         grunt.file.write(options.dist  + '/' + name + '.html', page);
     });
 
-    function render(path, partials) {
+    function render(path, inheritedData) {
 
         var pages = {}; 
+        var partials = {};
         grunt.file.recurse(path, function (abspath, rootdir, subdir, filename) {
 
             if (!filename.match(matcher)) return;
@@ -76,7 +88,19 @@ module.exports = function(grunt) {
                 pageData[name] = locals;
             }
 
-            pages[name] = template.render(locals, partials);
+            if (!abspath.match(partialsMatcher)){
+            	 grunt.log.writeln("Rendering partials for "+filename);
+                 partials = render(partialPath, merge(inheritedData, locals));
+            }else{
+            	grunt.log.writeln("Do not render partials again");   
+            }
+            
+            grunt.log.writeln("Rendering  "+filename+" as "+name);
+            pages[name]={
+            		data: locals,
+            		rendered: template.render( merge(inheritedData, locals), partials)
+            };
+           
         });
         return pages;
     }
