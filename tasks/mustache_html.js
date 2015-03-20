@@ -37,7 +37,7 @@ module.exports = function(grunt) {
     var pageData = {},
     
         pages = render(pagePath, {});
-    grunt.log.writeln(JSON.stringify(pages));
+    
     var layoutSrc = grunt.file.read(layoutPath),
         layout = hogan.compile(layoutSrc, { sectionTags: [{o:'_i', c:'i'}] });
 
@@ -53,7 +53,7 @@ module.exports = function(grunt) {
     		partials[partialName]=partialPageAndData.rendered;
     	});
        var page = layout.render(data,partials);
-        grunt.log.writeln("Writing page "+page);
+    
         grunt.file.write(options.dist  + '/' + name + '.html', page);
     });
 
@@ -89,13 +89,11 @@ module.exports = function(grunt) {
             }
 
             if (!abspath.match(partialsMatcher)){
-            	 grunt.log.writeln("Rendering partials for "+filename);
+            	
                  partials = render(partialPath, merge(inheritedData, locals));
-            }else{
-            	grunt.log.writeln("Do not render partials again");   
             }
             
-            grunt.log.writeln("Rendering  "+filename+" as "+name);
+           
             pages[name]={
             		data: locals,
             		rendered: template.render( merge(inheritedData, locals), partials)
