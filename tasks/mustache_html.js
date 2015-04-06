@@ -32,11 +32,13 @@ module.exports = function(grunt) {
     // jsts path
     var layoutPath = options.src + '/layout' + jstSuffix,
         pagePath = options.src + '/pages',
-        partialPath = options.src + '/partials';
-
+        partialPath = options.src + '/partials',
+        framesPath = options.src + '/frames';
     var pageData = {},
     
         pages = render(pagePath, {});
+ 
+ 
     
     var layoutSrc = grunt.file.read(layoutPath),
         layout = hogan.compile(layoutSrc, { sectionTags: [{o:'_i', c:'i'}] });
@@ -57,12 +59,18 @@ module.exports = function(grunt) {
         grunt.file.write(options.dist  + '/' + name + '.html', page);
     });
 
+    var   frames = render(framesPath, {});
+    each(frames, function (pageAndData, name) {
+        var page = pageAndData.rendered;
+        
+        grunt.file.write(options.dist  + '/' + name + '.html', page);
+    });
     function render(path, inheritedData) {
 
         var pages = {}; 
         var partials = {};
         grunt.file.recurse(path, function (abspath, rootdir, subdir, filename) {
-
+          
             if (!filename.match(matcher)) return;
 
             var name = filename.replace(matcher, ''),
@@ -72,7 +80,7 @@ module.exports = function(grunt) {
 
             var templateSrc = grunt.file.read(abspath),
                 template = hogan.compile(templateSrc, { sectionTags: [{o:'_i', c:'i'}] });
-
+            grunt.log.writeln(templateSrc);
             if (grunt.file.exists(dataPath)) {
                 data = JSON.parse(grunt.file.read(dataPath), function (key, value) {
                     if (value && (typeof value === 'string') && value.indexOf('function') === 0) {
@@ -90,15 +98,20 @@ module.exports = function(grunt) {
 
             if (!abspath.match(partialsMatcher)){
             	
-                 partials = render(partialPath, merge(inheritedData, locals));
+                 var partialObjects = render(partialPath, merge(inheritedData, locals));
+                 each(partialObjects, function (pageAndData, name) {
+                    
+                     partials[name]=pageAndData.rendered;
+                 });
+                
             }
             
-           
+            grunt.log.writeln(JSON.stringify(partials,null,4));
             pages[name]={
             		data: locals,
             		rendered: template.render( merge(inheritedData, locals), partials)
             };
-           
+            //grunt.log.writeln(name+" = "+ pages[name]);
         });
         return pages;
     }
