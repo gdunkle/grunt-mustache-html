@@ -80,7 +80,7 @@ module.exports = function(grunt) {
 
             var templateSrc = grunt.file.read(abspath),
                 template = hogan.compile(templateSrc, { sectionTags: [{o:'_i', c:'i'}] });
-            grunt.log.writeln(templateSrc);
+         //   grunt.log.writeln(templateSrc);
             if (grunt.file.exists(dataPath)) {
                 data = JSON.parse(grunt.file.read(dataPath), function (key, value) {
                     if (value && (typeof value === 'string') && value.indexOf('function') === 0) {
@@ -106,7 +106,7 @@ module.exports = function(grunt) {
                 
             }
             
-            grunt.log.writeln(JSON.stringify(partials,null,4));
+           // grunt.log.writeln(JSON.stringify(partials,null,4));
             pages[name]={
             		data: locals,
             		rendered: template.render( merge(inheritedData, locals), partials)
